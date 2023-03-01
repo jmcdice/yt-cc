@@ -22,5 +22,8 @@ Run the script with the following command:
 
 The script will download the subtitles for the YouTube video, summarize it using OpenAI, and print the summary to the console.
 
+![Example](./screenshot.png "Sample Usage")
+
+
 License
 This script is licensed under the MIT License. See the LICENSE file for more information.
