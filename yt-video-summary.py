@@ -83,7 +83,7 @@ def rewrite_text(text):
     print("Sending rewrite request to OpenAI API...")
     response = openai.Completion.create(
         engine="text-davinci-003",
-        prompt=f"Please provide a long and detailed summary of this text as if we were presenting a news article, in conversational language:\n{text}\n",
+        prompt=f"Please provide a long and detailed summary of this video as if we were presenting a news article, in conversational language:\n{text}\n",
         temperature=0.7,
         max_tokens=400,
         n=1,
@@ -131,7 +131,7 @@ def main(chunk_size):
     print(f"Summarizing file {filename}...")
     summary = summarize_file(filename, chunk_size)
     print("\n\n")
-    print("Summary: ", title)
+    print("Video Summary: ", title)
     print("\n")
     print(summary)
     print("\n\n")
