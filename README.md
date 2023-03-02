@@ -1,4 +1,4 @@
-# README for YouTube Subtitle Summarization
+# YouTube Subtitle Summarization
 This Python script will download subtitles for a given YouTube video URL, reformat the text and then, create a video summary using the OpenAI API. 
 
 ## Requirements
