@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 
 from yt_dlp import YoutubeDL
 import re
@@ -67,29 +67,33 @@ def chunk_text(text, chunk_size):
 # Define function to summarize a chunk of text
 def summarize_chunk(chunk, count):
     print(f"Sending request {count} to OpenAI API...")
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=chunk,
+    response = openai.ChatCompletion.create(
+        model='gpt-3.5-turbo',
+        messages=[
+            {"role": "system", "content": ""},
+            {"role": "user", "content": chunk},
+        ],
         temperature=0.7,
-        max_tokens=400,
-        n=1,
-        stop=None,
     )
-    summary = response.choices[0].text
+    summary = response['choices'][0]['message']['content']
     return summary.strip()
 
 # Define function to rewrite a text using OpenAI
 def rewrite_text(text):
     print("Sending rewrite request to OpenAI API...")
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=f"Please provide a long and detailed summary of this video as if we were presenting a news article, in conversational language:\n{text}\n",
+    response = openai.ChatCompletion.create(
+        model='gpt-3.5-turbo',
+        messages=[
+            { "role": "system", 
+              "content": "" },
+            { "role": "user", 
+              "content": (
+                    f"Please provide a summary of this video "
+                    f"in conversational language:\n{text}\n"), },
+        ],
         temperature=0.7,
-        max_tokens=400,
-        n=1,
-        stop=None,
     )
-    rewritten_text = response.choices[0].text
+    rewritten_text = response['choices'][0]['message']['content']
     return rewritten_text.strip()
 
 # Define function to summarize a full text file
@@ -113,6 +117,8 @@ def summarize_file(text, chunk_size):
     summary = " ".join(summaries)
     rewritten_summary = rewrite_text(summary)
     wrapped_summary = textwrap.fill(rewritten_summary, width=80)
+    # Remove leading space in the content
+    wrapped_summary = wrapped_summary.strip()
     return wrapped_summary
 
 # Define main function
@@ -132,4 +138,3 @@ if __name__ == "__main__":
 
     # Call the main function with the given arguments
     main(args.chunk_size)
-
