@@ -93,11 +93,7 @@ def rewrite_text(text):
     return rewritten_text.strip()
 
 # Define function to summarize a full text file
-def summarize_file(filename, chunk_size):
-    # Read in the file
-    with open(filename, "r") as f:
-        text = f.read()
-
+def summarize_file(text, chunk_size):
     # Clean up the text
     text = re.sub("\n+", "\n", text)
     text = re.sub("\n", ". ", text)
@@ -116,27 +112,16 @@ def summarize_file(filename, chunk_size):
     # Join the summaries together into a single text
     summary = " ".join(summaries)
     rewritten_summary = rewrite_text(summary)
-
-    # Wrap the summary
     wrapped_summary = textwrap.fill(rewritten_summary, width=80)
-
     return wrapped_summary
 
 # Define main function
 def main(chunk_size):
     # Download subtitles for the given video URL
-    title, srt_text = download_youtube_subtitle(args.url)
+    title, text = download_youtube_subtitle(args.url)
+    summary = summarize_file(text, chunk_size)
+    print("\n\nVideo Summary: ", title, "\n\n", summary, "\n\n")
 
-    filename="final.srt"
-    print(f"Summarizing file {filename}...")
-    summary = summarize_file(filename, chunk_size)
-    print("\n\n")
-    print("Video Summary: ", title)
-    print("\n")
-    print(summary)
-    print("\n\n")
-
-    os.remove("final.srt")
 
 # Parse command line arguments
 if __name__ == "__main__":
