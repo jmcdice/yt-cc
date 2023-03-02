@@ -11,6 +11,8 @@ import textwrap
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 def download_youtube_subtitle(url):
+    import io
+
     # Set YoutubeDL options
     ydl_opts = {
         'writesubtitles': True,    # Download subtitles
@@ -35,27 +37,21 @@ def download_youtube_subtitle(url):
     # Remove the metadata and timecodes using regular expressions
     clean_text = re.sub(r"<.*?>", "", text)
     clean_text = re.sub(r".*align:start position:.*\n", "", clean_text)
-    
+
     # Remove empty lines
     clean_text = "\n".join([line for line in clean_text.split("\n") if line.strip()])
 
-    # Write the cleaned SRT text to a new file
-    with open('output_cleaned.srt', 'w') as f:
-        f.write(clean_text)
-
-    with open('output_cleaned.srt', 'r') as input_file, open('final.srt', 'w') as output_file:
-        unique_lines = set()
-        for line in input_file:
-            if line.strip() not in unique_lines:
-                unique_lines.add(line.strip())
-                output_file.write(line)
+    # Write the cleaned SRT text to a string buffer
+    cleaned_srt = io.StringIO()
+    for line in clean_text.split("\n"):
+        cleaned_srt.write(line)
+        cleaned_srt.write("\n")
 
     # Remove the temporary files
     os.remove("output.srt.en.vtt")
-    os.remove("output_cleaned.srt")
-    
+
     # Return the title of the video and the cleaned SRT text
-    return title, clean_text
+    return title, cleaned_srt.getvalue()
 
 # Define function to break text into chunks
 def chunk_text(text, chunk_size):
@@ -70,8 +66,8 @@ def summarize_chunk(chunk, count):
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
         messages=[
-            {"role": "system", "content": ""},
-            {"role": "user", "content": chunk},
+            { "role": "system", "content": "" },
+            { "role": "user", "content": chunk },
         ],
         temperature=0.7,
     )
@@ -84,12 +80,9 @@ def rewrite_text(text):
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
         messages=[
-            { "role": "system", 
-              "content": "" },
-            { "role": "user", 
-              "content": (
-                    f"Please provide a summary of this video "
-                    f"in conversational language:\n{text}\n"), },
+            { "role": "system", "content": "" },
+            { "role": "user", "content": (
+                    f"Please provide a brief summary of this video:\n{text}\n"), },
         ],
         temperature=0.7,
     )
