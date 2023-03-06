@@ -10,6 +10,9 @@ import textwrap
 # Get OpenAI API key from environment variable
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
+# Define a variable to keep track of total tokens
+total_tokens = 0
+
 def download_youtube_subtitle(url):
     import io
 
@@ -62,6 +65,7 @@ def chunk_text(text, chunk_size):
 
 # Define function to summarize a chunk of text
 def summarize_chunk(chunk, count):
+    global total_tokens # Use the global total_tokens variable
     print(f"Sending request {count} to OpenAI API...")
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
@@ -72,13 +76,16 @@ def summarize_chunk(chunk, count):
         temperature=0.7,
     )
     summary = response['choices'][0]['message']['content']
+    token_count = response['usage']['total_tokens']
+    total_tokens += token_count # Update the total token count
     return summary.strip()
 
 # Define function to rewrite a text using OpenAI
 def rewrite_text(text):
+    global total_tokens # Use the global total_tokens variable
     print("Sending rewrite request to OpenAI API...")
     response = openai.ChatCompletion.create(
-        model='gpt-3.5-turbo',
+    model='gpt-3.5-turbo',
         messages=[
             { "role": "system", "content": "" },
             { "role": "user", "content": (
@@ -87,10 +94,13 @@ def rewrite_text(text):
         temperature=0.7,
     )
     rewritten_text = response['choices'][0]['message']['content']
+    token_count = response['usage']['total_tokens']
+    total_tokens += token_count # Update the total token count
     return rewritten_text.strip()
 
 # Define function to summarize a full text file
 def summarize_file(text, chunk_size):
+    global total_tokens # Use the global total_tokens variable
     # Clean up the text
     text = re.sub("\n+", "\n", text)
     text = re.sub("\n", ". ", text)
@@ -114,13 +124,23 @@ def summarize_file(text, chunk_size):
     wrapped_summary = wrapped_summary.strip()
     return wrapped_summary
 
+def get_openai_api_cost(num_tokens):
+    cost_per_token = 0.00267
+    total_cost = num_tokens * cost_per_token
+    return total_cost
+
+
 # Define main function
 def main(chunk_size):
+    global total_tokens # Use the global total_tokens variable
     # Download subtitles for the given video URL
     title, text = download_youtube_subtitle(args.url)
     summary = summarize_file(text, chunk_size)
     print("\n\nVideo Summary: ", title, "\n\n", summary, "\n\n")
 
+    # Print the total token count
+    total_cost = get_openai_api_cost(total_tokens)
+    print(f"Total tokens used: {total_tokens} (Cost: {total_cost})\n\n")
 
 # Parse command line arguments
 if __name__ == "__main__":
@@ -131,3 +151,6 @@ if __name__ == "__main__":
 
     # Call the main function with the given arguments
     main(args.chunk_size)
+
+       
+
