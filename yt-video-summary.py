@@ -48,6 +48,7 @@ def download_youtube_subtitle(url):
         'writesubtitles': True,    # Download subtitles
         'skip_download': True,     # Skip downloading the video
         'writeautomaticsub': True, # Write automatic subtitles
+        'quiet': True,             # Keep quiet
         'convertsubtitles': 'srt', # Convert the subtitles to srt format
         'subtitleslangs': ['en'],  # Download English subtitles only
         'outtmpl': 'output.srt'    # Name the subtitles file 'output.srt'
@@ -76,10 +77,8 @@ def download_youtube_subtitle(url):
     for line in clean_text.split("\n"):
         cleaned_srt.write(line)
         cleaned_srt.write("\n")
-
     # Remove the temporary files
     os.remove("output.srt.en.vtt")
-
     # Return the title of the video and the cleaned SRT text
     return title, cleaned_srt.getvalue()
 
@@ -93,7 +92,6 @@ def chunk_text(text, chunk_size):
 # Define function to summarize a chunk of text
 def summarize_chunk(chunk, count, debugging):
     global total_tokens # Use the global total_tokens variable
-    #print(f"Sending request {count} to OpenAI API...")
     start_time = time.time() # Start the timer
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
@@ -105,19 +103,20 @@ def summarize_chunk(chunk, count, debugging):
     )
     end_time = time.time() # Stop the timer
     elapsed_time_ms = int((end_time - start_time) * 1000) # Calculate the elapsed time in ms
-    print(f"Sent request {count} to OpenAI API ({elapsed_time_ms}ms)...")
+    token_count = response['usage']['total_tokens']
+    total_tokens += token_count # Update the total token count
+
+    print(f"Sent request {count} to OpenAI API ({elapsed_time_ms}ms) ({total_tokens})...")
     if debugging:
         # Write the response to a file
         write_response_to_file(response, count)
     summary = response['choices'][0]['message']['content']
-    token_count = response['usage']['total_tokens']
-    total_tokens += token_count # Update the total token count
     return summary.lstrip()
 
 # Define function to rewrite a text using OpenAI
 def rewrite_text(text, debugging):
     global total_tokens # use the global total_tokens variable
-    print("Sending rewrite request to OpenAI API...")
+    start_time = time.time() # Start the timer
     response = openai.ChatCompletion.create(
     model='gpt-3.5-turbo',
         messages=[
@@ -127,17 +126,20 @@ def rewrite_text(text, debugging):
         ],
         temperature=0.7,
     )
+    end_time = time.time() # Stop the timer
+    elapsed_time_ms = int((end_time - start_time) * 1000) # Calculate the elapsed time in ms
+    token_count = response['usage']['total_tokens']
+    total_tokens += token_count # Update the total token count
+
+    print(f"Sent rewrite request to OpenAI API ({elapsed_time_ms}ms) ({total_tokens})...")
     if debugging:
         # Write the response to a file
         write_response_to_file(response, "rewrite")
     rewritten_text = response['choices'][0]['message']['content']
-    token_count = response['usage']['total_tokens']
-    total_tokens += token_count # Update the total token count
     return rewritten_text.lstrip()
 
 # Define function to summarize a full text file
 def summarize_file(text, chunk_size, debugging):
-    global total_tokens # Use the global total_tokens variable
     # Clean up the text
     text = re.sub("\n+", "\n", text)
     text = re.sub("\n", ". ", text)
@@ -157,17 +159,14 @@ def summarize_file(text, chunk_size, debugging):
     summary = " ".join(summaries)
     rewritten_summary = rewrite_text(summary, debugging)
     wrapped_summary = textwrap.fill(rewritten_summary, width=80)
-    # Remove leading space in the content
     wrapped_summary = wrapped_summary.strip()
     #return rewritten_summary 
     return wrapped_summary.lstrip()
 
-import re
-
 # Define function to suggest hashtags based on input text
 def suggest_hashtags(text, debugging):
     global total_tokens # use the global total_tokens variable
-    print("Sending hashtag request to OpenAI API...")
+    start_time = time.time() # Start the timer
     response = openai.ChatCompletion.create(
     model='gpt-3.5-turbo',
         messages=[
@@ -178,18 +177,21 @@ def suggest_hashtags(text, debugging):
         ],
         temperature=0.7,
     )
+    end_time = time.time() # Stop the timer
+    elapsed_time_ms = int((end_time - start_time) * 1000) # Calculate the elapsed time in ms
+    token_count = response['usage']['total_tokens']
+    total_tokens += token_count # Update the total token count
+
+    print(f"Sent hashtag request to OpenAI API ({elapsed_time_ms}ms) ({total_tokens})...")
     if debugging:
         # Write the response to a file
         write_response_to_file(response, "hashtag_suggestion")
-
     hashtags = response['choices'][0]['message']['content']
-    token_count = response['usage']['total_tokens']
-    total_tokens += token_count # Update the total token count
     return hashtags.lstrip()
 
 def suggest_title(text, debugging):
     global total_tokens # use the global total_tokens variable
-    print("Sending title request to OpenAI API...")
+    start_time = time.time() # Start the timer
     response = openai.ChatCompletion.create(
     model='gpt-3.5-turbo',
         messages=[
@@ -199,13 +201,16 @@ def suggest_title(text, debugging):
         ],
         temperature=0.7,
     )
+    end_time = time.time() # Stop the timer
+    elapsed_time_ms = int((end_time - start_time) * 1000) # Calculate the elapsed time in ms
+    token_count = response['usage']['total_tokens']
+    total_tokens += token_count # Update the total token count
+
+    print(f"Sent title request to OpenAI API ({elapsed_time_ms}ms) ({total_tokens})...")
     if debugging:
         # Write the response to a file
         write_response_to_file(response, "title_suggestion")
-
     video_title = response['choices'][0]['message']['content']
-    token_count = response['usage']['total_tokens']
-    total_tokens += token_count # Update the total token count
     return video_title.lstrip()
 
 def get_openai_api_cost(num_tokens):
@@ -217,23 +222,22 @@ def get_openai_api_cost(num_tokens):
 # Define main function
 def main(chunk_size, debugging):
     global total_tokens # Use the global total_tokens variable
-
     # If --debugging option is present, clear the log directory
     if args.debugging:
         clear_log_directory()
 
     # Download subtitles for the given video URL
     title, text = download_youtube_subtitle(args.url)
+    #print(f"Downloaded subtitles for '{title}'\n\n")
     summary = summarize_file(text, chunk_size, debugging)
     hashtags = suggest_hashtags(summary, debugging)
     video_title = suggest_title(summary, debugging)
+    total_cost = get_openai_api_cost(total_tokens)
 
+    print(f"Total tokens used: {total_tokens} (Cost: {total_cost})\n\n")
     print("\n\nSuggested Title: ", video_title, "\n\nSuggested Summary:\n", summary, "\n\n")
     print("Suggested Hashtags: \n", hashtags, "\n\n")
 
-    # Print the total token count
-    total_cost = get_openai_api_cost(total_tokens)
-    print(f"Total tokens used: {total_tokens} (Cost: {total_cost})\n\n")
 
 # Parse command line arguments
 if __name__ == "__main__":
