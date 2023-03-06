@@ -6,13 +6,25 @@ import argparse
 import os
 import openai
 import textwrap
-import math
+import json
 
 # Get OpenAI API key from environment variable
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 # Define a variable to keep track of total tokens
 total_tokens = 0
+
+def write_response_to_file(response, count):
+    # Create a directory called 'log' if it doesn't exist
+    if not os.path.exists('log'):
+        os.makedirs('log')
+
+    # Create a file name inside the 'log' directory
+    file_name = os.path.join('log', f"response_{count}.json")
+
+    # Write the response to a file inside the 'log' directory
+    with open(file_name, 'w') as f:
+        json.dump(response, f)
 
 def download_youtube_subtitle(url):
     import io
@@ -65,7 +77,7 @@ def chunk_text(text, chunk_size):
     return chunks
 
 # Define function to summarize a chunk of text
-def summarize_chunk(chunk, count):
+def summarize_chunk(chunk, count, debugging):
     global total_tokens # Use the global total_tokens variable
     print(f"Sending request {count} to OpenAI API...")
     response = openai.ChatCompletion.create(
@@ -76,13 +88,16 @@ def summarize_chunk(chunk, count):
         ],
         temperature=0.7,
     )
+    if debugging:
+        # Write the response to a file
+        write_response_to_file(response, count)
     summary = response['choices'][0]['message']['content']
     token_count = response['usage']['total_tokens']
     total_tokens += token_count # Update the total token count
     return summary.strip()
 
 # Define function to rewrite a text using OpenAI
-def rewrite_text(text):
+def rewrite_text(text, debugging):
     global total_tokens # Use the global total_tokens variable
     print("Sending rewrite request to OpenAI API...")
     response = openai.ChatCompletion.create(
@@ -94,13 +109,16 @@ def rewrite_text(text):
         ],
         temperature=0.7,
     )
+    if debugging:
+        # Write the response to a file
+        write_response_to_file(response, "rewrite")
     rewritten_text = response['choices'][0]['message']['content']
     token_count = response['usage']['total_tokens']
     total_tokens += token_count # Update the total token count
     return rewritten_text.strip()
 
 # Define function to summarize a full text file
-def summarize_file(text, chunk_size):
+def summarize_file(text, chunk_size, debugging):
     global total_tokens # Use the global total_tokens variable
     # Clean up the text
     text = re.sub("\n+", "\n", text)
@@ -114,12 +132,12 @@ def summarize_file(text, chunk_size):
     # Summarize each chunk
     summaries = []
     for i, chunk in enumerate(chunks):
-        summary = summarize_chunk(chunk, i+1)
+        summary = summarize_chunk(chunk, i+1, debugging)
         summaries.append(summary)
 
     # Join the summaries together into a single text
     summary = " ".join(summaries)
-    rewritten_summary = rewrite_text(summary)
+    rewritten_summary = rewrite_text(summary, debugging)
     wrapped_summary = textwrap.fill(rewritten_summary, width=80)
     # Remove leading space in the content
     wrapped_summary = wrapped_summary.strip()
@@ -128,16 +146,15 @@ def summarize_file(text, chunk_size):
 def get_openai_api_cost(num_tokens):
     cost_per_token = 0.0002
     total_cost = num_tokens * cost_per_token
-    rounded_cost = math.ceil(total_cost * 100) / 100  # Round up to 2 decimal places
+    rounded_cost = round(total_cost / 10, 2)
     return rounded_cost
 
-
 # Define main function
-def main(chunk_size):
+def main(chunk_size, debugging):
     global total_tokens # Use the global total_tokens variable
     # Download subtitles for the given video URL
     title, text = download_youtube_subtitle(args.url)
-    summary = summarize_file(text, chunk_size)
+    summary = summarize_file(text, chunk_size, debugging)
     print("\n\nVideo Summary: ", title, "\n\n", summary, "\n\n")
 
     # Print the total token count
@@ -149,8 +166,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('url', help='YouTube video URL')
     parser.add_argument("--chunk_size", type=int, default=5000, help="size of each text chunk (default: 5000)")
+    parser.add_argument("--debugging", action="store_true", help="enable debugging mode")
     args = parser.parse_args()
 
     # Call the main function with the given arguments
-    main(args.chunk_size)
+    main(args.chunk_size, args.debugging)
 
