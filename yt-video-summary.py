@@ -7,6 +7,7 @@ import os
 import openai
 import textwrap
 import json
+import time
 
 # Get OpenAI API key from environment variable
 openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -79,7 +80,8 @@ def chunk_text(text, chunk_size):
 # Define function to summarize a chunk of text
 def summarize_chunk(chunk, count, debugging):
     global total_tokens # Use the global total_tokens variable
-    print(f"Sending request {count} to OpenAI API...")
+    #print(f"Sending request {count} to OpenAI API...")
+    start_time = time.time() # Start the timer
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
         messages=[
@@ -88,6 +90,9 @@ def summarize_chunk(chunk, count, debugging):
         ],
         temperature=0.7,
     )
+    end_time = time.time() # Stop the timer
+    elapsed_time_ms = int((end_time - start_time) * 1000) # Calculate the elapsed time in ms
+    print(f"Sent request {count} to OpenAI API ({elapsed_time_ms}ms)...")
     if debugging:
         # Write the response to a file
         write_response_to_file(response, count)
