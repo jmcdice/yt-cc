@@ -106,7 +106,7 @@ def summarize_chunk(chunk, count, debugging):
     token_count = response['usage']['total_tokens']
     total_tokens += token_count # Update the total token count
 
-    print(f"Sent request {count} to OpenAI API ({elapsed_time_ms}ms) ({total_tokens})...")
+    print(f"Sent request {count} to OpenAI API ({elapsed_time_ms}ms) ({total_tokens} tokens)...")
     if debugging:
         # Write the response to a file
         write_response_to_file(response, count)
@@ -131,7 +131,7 @@ def rewrite_text(text, debugging):
     token_count = response['usage']['total_tokens']
     total_tokens += token_count # Update the total token count
 
-    print(f"Sent rewrite request to OpenAI API ({elapsed_time_ms}ms) ({total_tokens})...")
+    print(f"Sent rewrite request to OpenAI API ({elapsed_time_ms}ms) ({total_tokens} tokens)...")
     if debugging:
         # Write the response to a file
         write_response_to_file(response, "rewrite")
@@ -182,7 +182,7 @@ def suggest_hashtags(text, debugging):
     token_count = response['usage']['total_tokens']
     total_tokens += token_count # Update the total token count
 
-    print(f"Sent hashtag request to OpenAI API ({elapsed_time_ms}ms) ({total_tokens})...")
+    print(f"Sent hashtag request to OpenAI API ({elapsed_time_ms}ms) ({total_tokens} tokens)...")
     if debugging:
         # Write the response to a file
         write_response_to_file(response, "hashtag_suggestion")
@@ -206,7 +206,7 @@ def suggest_title(text, debugging):
     token_count = response['usage']['total_tokens']
     total_tokens += token_count # Update the total token count
 
-    print(f"Sent title request to OpenAI API ({elapsed_time_ms}ms) ({total_tokens})...")
+    print(f"Sent title request to OpenAI API ({elapsed_time_ms}ms) ({total_tokens} tokens)...")
     if debugging:
         # Write the response to a file
         write_response_to_file(response, "title_suggestion")
