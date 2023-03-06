@@ -6,6 +6,7 @@ import argparse
 import os
 import openai
 import textwrap
+import math
 
 # Get OpenAI API key from environment variable
 openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -125,9 +126,10 @@ def summarize_file(text, chunk_size):
     return wrapped_summary
 
 def get_openai_api_cost(num_tokens):
-    cost_per_token = 0.00267
+    cost_per_token = 0.0002
     total_cost = num_tokens * cost_per_token
-    return total_cost
+    rounded_cost = math.ceil(total_cost * 100) / 100  # Round up to 2 decimal places
+    return rounded_cost
 
 
 # Define main function
@@ -151,6 +153,4 @@ if __name__ == "__main__":
 
     # Call the main function with the given arguments
     main(args.chunk_size)
-
-       
 
